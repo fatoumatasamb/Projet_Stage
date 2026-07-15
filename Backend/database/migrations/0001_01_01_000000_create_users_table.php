@@ -6,17 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('nom');
+            $table->string('prenom')->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('telephone')->nullable();
+            $table->string('adresse')->nullable();
+            // role de l'intervenant (héritage Intervenant -> Enseignant/Etudiant/Technicien/Responsable)
+            $table->enum('role', ['enseignant', 'etudiant', 'technicien', 'responsable'])->index();
+            // statut du compte : en_attente (avant validation), actif, suspendu
+            $table->enum('statut', ['en_attente', 'actif', 'suspendu'])->default('en_attente');
             $table->rememberToken();
             $table->timestamps();
         });
@@ -37,9 +41,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');
