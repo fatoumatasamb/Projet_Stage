@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Notification;
 
 class AuthController extends Controller
 {
@@ -94,20 +95,30 @@ class AuthController extends Controller
             ]),
         };
 
-        if ($statut !== 'actif') {
+     if ($statut !== 'actif') {
+            // Notifier tous les responsables actifs qu'un nouveau compte responsable attend validation
+            $responsablesActifs = User::where('role', 'responsable')->where('statut', 'actif')->get();
+            foreach ($responsablesActifs as $r) {
+                Notification::create([
+                    'user_id' => $r->id,
+                    'type' => 'inscription_responsable',
+                    'message' => "{$user->nom} {$user->prenom} s'est inscrit en tant que responsable et attend validation.",
+                    'lien' => '/responsable/utilisateurs',
+                ]);
+            }
+
             return response()->json([
                 'message' => 'Compte créé. En attente de validation par un responsable.',
             ], 201);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
         return response()->json([
-            'message' => 'Inscription réussie.',
+            'message' => 'Compte créé avec succès.',
             'user' => $user->load($request->role),
-            'token' => $token,
         ], 201);
     }
+
+    // Se connecter
 
     // Se connecter
     public function login(Request $request)

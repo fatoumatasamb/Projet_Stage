@@ -9,7 +9,10 @@ class Incident extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['signale_par_id', 'technicien_id', 'materiel_id', 'salle_id', 'description', 'statut', 'date_signalement'];
+    protected $fillable = [
+        'signale_par_id', 'technicien_id', 'materiel_id', 'salle_id',
+        'quantite_materiel_affecte', 'description', 'statut', 'date_signalement',
+    ];
 
     public function signalePar()
     {

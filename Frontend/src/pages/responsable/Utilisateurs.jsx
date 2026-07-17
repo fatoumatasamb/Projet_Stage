@@ -23,6 +23,11 @@ export default function Utilisateurs() {
     await api.post(`/utilisateurs/${id}/suspendre`)
     load()
   }
+  async function supprimer(id) {
+    if (!window.confirm('Supprimer definitivement cet utilisateur ? Cette action est irreversible.')) return
+    await api.delete(`/utilisateurs/${id}`)
+    load()
+  }
 
   return (
     <DashboardLayout>
@@ -59,9 +64,10 @@ export default function Utilisateurs() {
                   {u.statut !== 'actif' && (
                     <button onClick={() => valider(u.id)} className="text-xs font-medium text-accent hover:underline">Valider</button>
                   )}
-                  {u.statut !== 'suspendu' && (
+                 {u.statut !== 'suspendu' && (
                     <button onClick={() => suspendre(u.id)} className="text-xs font-medium text-red-500 hover:underline">Suspendre</button>
                   )}
+                  <button onClick={() => supprimer(u.id)} className="text-xs font-medium text-red-700 hover:underline">Supprimer</button>
                 </td>
               </tr>
             ))}

@@ -10,6 +10,7 @@ import EnseignantTpList from './pages/enseignant/TpList'
 import EnseignantTpDetail from './pages/enseignant/TpDetail'
 import EnseignantReservations from './pages/enseignant/Reservations'
 import EnseignantComptesRendus from './pages/enseignant/ComptesRendus'
+import EnseignantIncidents from './pages/enseignant/Incidents'
 
 import EtudiantTpList from './pages/etudiant/TpList'
 import EtudiantNotes from './pages/etudiant/Notes'
@@ -21,6 +22,7 @@ import ResponsableOverview from './pages/responsable/Overview'
 import ResponsableUtilisateurs from './pages/responsable/Utilisateurs'
 import ResponsableSalles from './pages/responsable/Salles'
 import ResponsableMateriels from './pages/responsable/Materiels'
+import ResponsableIncidents from './pages/responsable/Incidents'
 
 function HomeRedirect() {
   const { user, loading } = useAuth()
@@ -44,6 +46,7 @@ export default function App() {
           <Route path="/enseignant/tp/:id" element={<ProtectedRoute roles={['enseignant']}><EnseignantTpDetail /></ProtectedRoute>} />
           <Route path="/enseignant/reservations" element={<ProtectedRoute roles={['enseignant']}><EnseignantReservations /></ProtectedRoute>} />
           <Route path="/enseignant/notes" element={<ProtectedRoute roles={['enseignant']}><EnseignantComptesRendus /></ProtectedRoute>} />
+           <Route path="/enseignant/incidents" element={<ProtectedRoute roles={['enseignant']}><EnseignantIncidents /></ProtectedRoute>} />
 
           <Route path="/etudiant" element={<ProtectedRoute roles={['etudiant']}><EtudiantTpList /></ProtectedRoute>} />
           <Route path="/etudiant/notes" element={<ProtectedRoute roles={['etudiant']}><EtudiantNotes /></ProtectedRoute>} />
@@ -55,6 +58,7 @@ export default function App() {
           <Route path="/responsable/utilisateurs" element={<ProtectedRoute roles={['responsable']}><ResponsableUtilisateurs /></ProtectedRoute>} />
           <Route path="/responsable/salles" element={<ProtectedRoute roles={['responsable']}><ResponsableSalles /></ProtectedRoute>} />
           <Route path="/responsable/materiels" element={<ProtectedRoute roles={['responsable']}><ResponsableMateriels /></ProtectedRoute>} />
+          <Route path="/responsable/incidents" element={<ProtectedRoute roles={['responsable']}><ResponsableIncidents /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

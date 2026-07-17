@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\RessourceController;
 use App\Http\Controllers\Api\SalleController;
 use App\Http\Controllers\Api\SeanceController;
 use App\Http\Controllers\Api\TpController;
+use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -45,6 +46,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---- Incidents : consultation + signalement ouverts à tous ----
     Route::get('/incidents', [IncidentController::class, 'index']);
     Route::post('/incidents', [IncidentController::class, 'store']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{notification}/lu', [NotificationController::class, 'marquerLu']);
+    Route::post('/notifications/lues', [NotificationController::class, 'marquerToutesLues']);
 
     // =====================  ENSEIGNANT  =====================
     Route::middleware('role:enseignant')->group(function () {
@@ -87,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/utilisateurs', [ResponsableController::class, 'creerUtilisateur']);  // Créer un compte (email hors université autorisé)
         Route::post('/utilisateurs/{user}/valider', [ResponsableController::class, 'validerCompte']);   // Valider compte
         Route::post('/utilisateurs/{user}/suspendre', [ResponsableController::class, 'suspendreCompte']); // Suspendre compte
+        Route::delete('/utilisateurs/{user}', [ResponsableController::class, 'supprimerUtilisateur']); // Supprimer utilisateurcompte
         Route::get('/statistiques', [ResponsableController::class, 'statistiques']);       // Consulter statistiques
         Route::get('/rapports', [ResponsableController::class, 'rapports']);
         Route::get('/enseignants', [EnseignantController::class, 'index']);                // Interagir avec les intervenants
@@ -100,5 +105,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/materiels-admin', [MaterielController::class, 'store']); // Gérer ressources matérielles
         Route::put('/materiels-admin/{materiel}', [MaterielController::class, 'update']);
         Route::delete('/materiels-admin/{materiel}', [MaterielController::class, 'destroy']);
+        Route::post('/materiels-admin', [MaterielController::class, 'store']);
     });
 });

@@ -5,12 +5,25 @@ import api from '../../services/api'
 // Gérer les ressources matérielles et pédagogiques
 export default function Materiels() {
   const [materiels, setMateriels] = useState([])
+  const [form, setForm] = useState({ nom: '', type: '', quantite: 1, etat: 'bon' })
+  const [submitting, setSubmitting] = useState(false)
 
   function load() {
     api.get('/materiels').then((res) => setMateriels(res.data))
   }
-
   useEffect(load, [])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      await api.post('/materiels-admin', form)
+      setForm({ nom: '', type: '', quantite: 1, etat: 'bon' })
+      load()
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   async function remove(id) {
     if (!confirm('Supprimer ce matériel ?')) return
@@ -22,8 +35,45 @@ export default function Materiels() {
     <DashboardLayout>
       <h1 className="font-display text-2xl font-semibold">Matériels &amp; ressources pédagogiques</h1>
       <p className="mt-1 text-sm text-blueprint-900/60">
-        Les techniciens ajoutent et mettent à jour les équipements ; vous pouvez superviser et retirer une entrée si nécessaire.
+        Vous pouvez ajouter un materiel, superviser les entrees des techniciens et retirer une entree si necessaire.
       </p>
+
+      <form onSubmit={handleSubmit} className="card mt-6 grid gap-3 md:grid-cols-4">
+        <input
+          required
+          className="input"
+          placeholder="Nom du materiel"
+          value={form.nom}
+          onChange={(e) => setForm({ ...form, nom: e.target.value })}
+        />
+        <input
+          className="input"
+          placeholder="Type (optionnel)"
+          value={form.type}
+          onChange={(e) => setForm({ ...form, type: e.target.value })}
+        />
+        <input
+          type="number"
+          min="0"
+          required
+          className="input"
+          placeholder="Quantite"
+          value={form.quantite}
+          onChange={(e) => setForm({ ...form, quantite: e.target.value })}
+        />
+        <select
+          className="input"
+          value={form.etat}
+          onChange={(e) => setForm({ ...form, etat: e.target.value })}
+        >
+          <option value="bon">Bon etat</option>
+          <option value="use">Use</option>
+          <option value="defectueux">Defectueux</option>
+        </select>
+        <button disabled={submitting} className="btn-accent md:col-span-4">
+          {submitting ? 'Ajout...' : 'Ajouter le materiel'}
+        </button>
+      </form>
 
       <div className="mt-6 overflow-hidden rounded-lg border border-blueprint-900/10">
         <table className="w-full text-sm">

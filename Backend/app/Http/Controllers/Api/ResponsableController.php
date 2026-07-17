@@ -100,12 +100,22 @@ class ResponsableController extends Controller
         return response()->json(['message' => 'Compte validé.', 'user' => $user]);
     }
 
-    // Suspendre compte
+   // Suspendre compte
     public function suspendreCompte(User $user)
     {
         $user->update(['statut' => 'suspendu']);
 
         return response()->json(['message' => 'Compte suspendu.', 'user' => $user]);
+    }
+
+    // Supprimer un utilisateur
+    public function supprimerUtilisateur(Request $request, User $user)
+    {
+        abort_if($user->id === $request->user()->id, 422, 'Vous ne pouvez pas supprimer votre propre compte.');
+
+        $user->delete();
+
+        return response()->json(['message' => 'Utilisateur supprimé.']);
     }
 
     // Consulter statistiques (génère un rapport simple à la volée)

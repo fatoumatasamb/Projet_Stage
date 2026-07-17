@@ -1,12 +1,14 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import NotificationBell from '../components/NotificationBell'
 
 const NAV = {
   enseignant: [
     { to: '/enseignant', label: 'Mes TP' },
     { to: '/enseignant/reservations', label: 'Réservations' },
     { to: '/enseignant/notes', label: 'Comptes rendus' },
+    { to: '/enseignant/incidents', label: 'Incidents' },
   ],
   etudiant: [
     { to: '/etudiant', label: 'TP disponibles' },
@@ -16,11 +18,12 @@ const NAV = {
     { to: '/technicien', label: 'Matériels' },
     { to: '/technicien/incidents', label: 'Incidents' },
   ],
-  responsable: [
+ responsable: [
     { to: '/responsable', label: "Vue d'ensemble" },
     { to: '/responsable/utilisateurs', label: 'Utilisateurs' },
     { to: '/responsable/salles', label: 'Salles' },
     { to: '/responsable/materiels', label: 'Matériels' },
+    { to: '/responsable/incidents', label: 'Incidents' },
   ],
 }
 
@@ -60,9 +63,10 @@ export default function DashboardLayout({ children }) {
               ))}
             </nav>
           </div>
-          <div className="flex items-center gap-4">
+         <div className="flex items-center gap-4">
+            <NotificationBell />
             <div className="text-right">
-              <p className="text-sm font-medium text-white">{user?.nom} {user?.prenom}</p>
+              <p className="text-sm font-medium text-white">{user?.prenom} {user?.nom}</p>
               <p className="font-mono text-[11px] uppercase tracking-wide text-accent">{ROLE_LABELS[user?.role]}</p>
             </div>
             <button onClick={logout} className="btn-outline border-white/20 text-white hover:bg-white/10">
