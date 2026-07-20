@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Notification;
+use App\Mail\EmailVerificationMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -56,11 +59,12 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Seul le compte Responsable nécessite une validation manuelle
-        // (un enseignant, par exemple, peut aussi devenir responsable : ce rôle sensible
-        // reste donc soumis à validation par un responsable déjà actif).
+      // Tous les comptes démarrent en_attente : les rôles auto-validés reçoivent
+        // un email avec un lien de confirmation ; le Responsable reçoit une notification
+        // et peut valider manuellement en cas de problème avec le lien.
         $autoValidatedRoles = ['etudiant', 'enseignant', 'technicien'];
-        $statut = in_array($request->role, $autoValidatedRoles, true) ? 'actif' : 'en_attente';
+        $isAutoValidated = in_array($request->role, $autoValidatedRoles, true);
+        $verificationToken = $isAutoValidated ? Str::random(64) : null;
 
         $user = User::create([
             'nom' => $request->nom,
@@ -70,7 +74,8 @@ class AuthController extends Controller
             'telephone' => $request->telephone,
             'adresse' => $request->adresse,
             'role' => $request->role,
-            'statut' => $statut,
+            'statut' => 'en_attente',
+            'verification_token' => $verificationToken,
         ]);
 
         match ($request->role) {
@@ -95,30 +100,62 @@ class AuthController extends Controller
             ]),
         };
 
-     if ($statut !== 'actif') {
-            // Notifier tous les responsables actifs qu'un nouveau compte responsable attend validation
+  if ($isAutoValidated) {
+            // Envoyer l'email de confirmation avec le lien de validation automatique
+            Mail::to($user->email)->send(new EmailVerificationMail($user));
+
+            // Notifier aussi les responsables actifs, au cas où le lien poserait problème
             $responsablesActifs = User::where('role', 'responsable')->where('statut', 'actif')->get();
             foreach ($responsablesActifs as $r) {
                 Notification::create([
                     'user_id' => $r->id,
-                    'type' => 'inscription_responsable',
-                    'message' => "{$user->nom} {$user->prenom} s'est inscrit en tant que responsable et attend validation.",
+                    'type' => 'inscription_a_confirmer',
+                    'message' => "{$user->nom} {$user->prenom} ({$user->role}) s'est inscrit(e). Un email de confirmation lui a été envoyé ; vous pouvez aussi valider manuellement en cas de problème.",
                     'lien' => '/responsable/utilisateurs',
                 ]);
             }
 
             return response()->json([
-                'message' => 'Compte créé. En attente de validation par un responsable.',
+                'message' => 'Compte créé. Vérifiez votre email pour confirmer votre inscription.',
             ], 201);
         }
 
+        // Cas du rôle responsable : validation manuelle uniquement
+        $responsablesActifs = User::where('role', 'responsable')->where('statut', 'actif')->get();
+        foreach ($responsablesActifs as $r) {
+            Notification::create([
+                'user_id' => $r->id,
+                'type' => 'inscription_responsable',
+                'message' => "{$user->nom} {$user->prenom} s'est inscrit en tant que responsable et attend validation.",
+                'lien' => '/responsable/utilisateurs',
+            ]);
+        }
+
         return response()->json([
-            'message' => 'Compte créé avec succès.',
-            'user' => $user->load($request->role),
+            'message' => 'Compte créé. En attente de validation par un responsable.',
         ], 201);
     }
 
-    // Se connecter
+    // Confirmer l'email via le lien reçu (validation automatique)
+    public function verifierEmail($token)
+    {
+        $user = User::where('verification_token', $token)->first();
+
+        if (! $user) {
+            return response()->view('verification-resultat', [
+                'succes' => false,
+                'message' => 'Ce lien est invalide ou a déjà été utilisé. Contactez un responsable pour valider votre compte manuellement.',
+            ]);
+        }
+
+        $user->update(['statut' => 'actif', 'verification_token' => null]);
+
+        return response()->view('verification-resultat', [
+            'succes' => true,
+            'message' => 'Votre compte a été validé avec succès ! Vous pouvez maintenant vous connecter.',
+        ]);
+    }
+
 
     // Se connecter
     public function login(Request $request)

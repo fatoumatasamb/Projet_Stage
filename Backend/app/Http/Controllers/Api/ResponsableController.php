@@ -12,6 +12,8 @@ use App\Models\Technicien;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
+use App\Mail\CompteStatutMail;
+use Illuminate\Support\Facades\Mail;
 
 // Regroupe les use cases du Responsable : Gérer utilisateurs, Valider/Suspendre compte,
 // Consulter statistiques, Interagir avec les intervenants.
@@ -92,15 +94,29 @@ class ResponsableController extends Controller
         ], 201);
     }
 
-    // Valider compte
+   // Valider compte
     public function validerCompte(User $user)
     {
         $user->update(['statut' => 'actif']);
 
+        Mail::to($user->email)->send(new CompteStatutMail($user, 'valide'));
+
         return response()->json(['message' => 'Compte validé.', 'user' => $user]);
     }
 
-   // Suspendre compte
+    // Rejeter une demande d'inscription (compte encore en_attente)
+    public function rejeterCompte(User $user)
+    {
+        abort_if($user->statut !== 'en_attente', 422, 'Seul un compte en attente peut être rejeté.');
+
+        Mail::to($user->email)->send(new CompteStatutMail($user, 'rejete'));
+
+        $user->delete();
+
+        return response()->json(['message' => 'Inscription rejetée.']);
+    }
+
+    // Suspendre compte (compte déjà actif)
     public function suspendreCompte(User $user)
     {
         $user->update(['statut' => 'suspendu']);

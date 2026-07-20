@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Route;
 // ---- Authentification (use cases "Se connecter" / "S'inscrire") ----
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/verifier-email/{token}', [AuthController::class, 'verifierEmail']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -90,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/utilisateurs', [ResponsableController::class, 'utilisateurs']);       // Gérer les utilisateurs
         Route::post('/utilisateurs', [ResponsableController::class, 'creerUtilisateur']);  // Créer un compte (email hors université autorisé)
         Route::post('/utilisateurs/{user}/valider', [ResponsableController::class, 'validerCompte']);   // Valider compte
+        Route::post('/utilisateurs/{user}/rejeter', [ResponsableController::class, 'rejeterCompte']);   // Rejeter inscription
         Route::post('/utilisateurs/{user}/suspendre', [ResponsableController::class, 'suspendreCompte']); // Suspendre compte
         Route::delete('/utilisateurs/{user}', [ResponsableController::class, 'supprimerUtilisateur']); // Supprimer utilisateurcompte
         Route::get('/statistiques', [ResponsableController::class, 'statistiques']);       // Consulter statistiques
