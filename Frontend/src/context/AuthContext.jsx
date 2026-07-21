@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('labtpad_user', JSON.stringify(newUser))
       setUser(newUser)
     }
-    return newUser
+    return res.data
   }
 
   function logout() {
