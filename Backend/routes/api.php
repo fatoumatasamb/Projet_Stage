@@ -24,7 +24,12 @@ use Illuminate\Support\Facades\Route;
 // ---- Authentification (use cases "Se connecter" / "S'inscrire") ----
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::get('/verifier-email/{token}', [AuthController::class, 'verifierEmail']);
+
+// ---- Vérification d'email (use case "S'inscrire" -> include "Validation automatique") ----
+Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+    ->middleware('signed')
+    ->name('verification.verify');
+Route::post('/email/resend', [AuthController::class, 'resendVerification']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -107,6 +112,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/materiels-admin', [MaterielController::class, 'store']); // Gérer ressources matérielles
         Route::put('/materiels-admin/{materiel}', [MaterielController::class, 'update']);
         Route::delete('/materiels-admin/{materiel}', [MaterielController::class, 'destroy']);
-        Route::post('/materiels-admin', [MaterielController::class, 'store']);
     });
 });
