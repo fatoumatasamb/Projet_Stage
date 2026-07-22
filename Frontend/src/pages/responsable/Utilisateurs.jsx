@@ -23,6 +23,11 @@ export default function Utilisateurs() {
     await api.post(`/utilisateurs/${id}/suspendre`)
     load()
   }
+  async function rejeter(id) {
+    if (!window.confirm('Rejeter cette inscription ? Le compte sera supprime.')) return
+    await api.post(`/utilisateurs/${id}/rejeter`)
+    load()
+  }
   async function supprimer(id) {
     if (!window.confirm('Supprimer definitivement cet utilisateur ? Cette action est irreversible.')) return
     await api.delete(`/utilisateurs/${id}`)
@@ -61,8 +66,11 @@ export default function Utilisateurs() {
                 <td className="px-4 py-2 capitalize">{u.role}</td>
                 <td className="px-4 py-2"><StatusDot status={u.statut} /></td>
                 <td className="px-4 py-2 space-x-3">
-                  {u.statut !== 'actif' && (
+                 {u.statut !== 'actif' && (
                     <button onClick={() => valider(u.id)} className="text-xs font-medium text-accent hover:underline">Valider</button>
+                  )}
+                  {u.statut === 'en_attente' && (
+                    <button onClick={() => rejeter(u.id)} className="text-xs font-medium text-red-600 hover:underline">Rejeter</button>
                   )}
                  {u.statut !== 'suspendu' && (
                     <button onClick={() => suspendre(u.id)} className="text-xs font-medium text-red-500 hover:underline">Suspendre</button>
