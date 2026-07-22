@@ -92,8 +92,13 @@ class AuthController extends Controller
             ]),
         };
 
-        // Envoie l'email de verification (systeme natif Laravel, lien signe -> page frontend)
-        $user->sendEmailVerificationNotification();
+// Envoie l'email de verification (systeme natif Laravel, lien signe -> page frontend).
+        // Ne bloque pas l'inscription si l'envoi echoue (ex: SMTP indisponible).
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Échec envoi email de vérification: ' . $e->getMessage());
+        }
 
         $responsablesActifs = User::where('role', 'responsable')->where('statut', 'actif')->get();
 
