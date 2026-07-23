@@ -88,7 +88,11 @@ class AuthController extends Controller
             ]),
         };
 
-        $user->sendEmailVerificationNotification();
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Échec envoi email de vérification: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Inscription réussie. Un email de vérification vous a été envoyé.',

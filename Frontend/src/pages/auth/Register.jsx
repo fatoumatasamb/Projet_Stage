@@ -50,8 +50,7 @@ export default function Register() {
         <form onSubmit={handleSubmit} className="card">
           <h2 className="mb-4 font-display text-lg font-semibold">S'inscrire</h2>
           {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-          {message && <p className="mb-4 rounded-md bg-amber/10 px-3 py-2 text-sm text-amber">{message}</p>}
-
+{message && <p className="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}
           <div className="mb-4">
             <label className="label">Je suis</label>
             <select className="input" value={form.role} onChange={(e) => update('role', e.target.value)}>
