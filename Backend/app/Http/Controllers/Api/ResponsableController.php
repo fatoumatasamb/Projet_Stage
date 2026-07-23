@@ -55,7 +55,7 @@ class ResponsableController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::create([
+       $user = User::create([
             'nom' => $request->nom,
             'prenom' => $request->prenom,
             'email' => $request->email,
@@ -65,6 +65,11 @@ class ResponsableController extends Controller
             'role' => $request->role,
             'statut' => 'actif',
         ]);
+
+        // Un compte cree directement par le responsable est considere comme verifie d'office :
+        // pas besoin de cliquer sur un lien recu par email dans ce cas.
+        $user->email_verified_at = now();
+        $user->save();
 
         match ($request->role) {
             'enseignant' => Enseignant::create([
