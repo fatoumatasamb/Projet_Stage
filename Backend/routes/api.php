@@ -96,6 +96,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/utilisateurs', [ResponsableController::class, 'utilisateurs']);       // Gérer les utilisateurs
         Route::post('/utilisateurs', [ResponsableController::class, 'creerUtilisateur']);  // Créer un compte (email hors université autorisé)
         Route::post('/utilisateurs/{user}/valider', [ResponsableController::class, 'validerCompte']);   // Valider compte
+        Route::post('/utilisateurs/{user}/rejeter', [ResponsableController::class, 'rejeterCompte']);   // Rejeter inscription
         Route::post('/utilisateurs/{user}/suspendre', [ResponsableController::class, 'suspendreCompte']); // Suspendre compte
         Route::delete('/utilisateurs/{user}', [ResponsableController::class, 'supprimerUtilisateur']); // Supprimer utilisateurcompte
         Route::get('/statistiques', [ResponsableController::class, 'statistiques']);       // Consulter statistiques
@@ -111,6 +112,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/materiels-admin', [MaterielController::class, 'store']); // Gérer ressources matérielles
         Route::put('/materiels-admin/{materiel}', [MaterielController::class, 'update']);
         Route::delete('/materiels-admin/{materiel}', [MaterielController::class, 'destroy']);
-        Route::post('/materiels-admin', [MaterielController::class, 'store']);
     });
 });
