@@ -94,10 +94,17 @@ class ResponsableController extends Controller
         ], 201);
     }
 
-   // Valider compte
-    public function validerCompte(User $user)
+  public function validerCompte(User $user)
     {
-        $user->update(['statut' => 'actif']);
+        $user->statut = 'actif';
+
+        // La validation manuelle par un responsable fait aussi office de verification d'email :
+        // l'utilisateur pourrait ne jamais avoir clique sur le lien recu par mail.
+        if (! $user->hasVerifiedEmail()) {
+            $user->email_verified_at = now();
+        }
+
+        $user->save();
 
         Mail::to($user->email)->send(new CompteStatutMail($user, 'valide'));
 
