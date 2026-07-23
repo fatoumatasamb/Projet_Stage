@@ -92,16 +92,21 @@ class AuthController extends Controller
             ]),
         };
 
-        try {
-            $user->sendEmailVerificationNotification();
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Échec envoi email de vérification: ' . $e->getMessage());
+// Envoie l'email de verification (systeme natif Laravel, lien signe -> page frontend).
+        // Sauf pour le role Responsable : son compte necessite de toute facon une validation
+        // manuelle par un autre responsable, qui fera aussi office de verification d'email.
+        // Ne bloque pas l'inscription si l'envoi echoue (ex: SMTP indisponible).
+        if ($request->role !== 'responsable') {
+            try {
+                $user->sendEmailVerificationNotification();
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Échec envoi email de vérification: ' . $e->getMessage());
+            }
         }
-
         $responsablesActifs = User::where('role', 'responsable')->where('statut', 'actif')->get();
 
         if ($statut === 'en_attente') {
-            // Cas Responsable : necessite une validation manuelle en plus de la verification email
+            // Cas Responsable : necessite une validation manuelle par un autre responsable actif
             foreach ($responsablesActifs as $r) {
                 Notification::create([
                     'user_id' => $r->id,
@@ -156,13 +161,16 @@ class AuthController extends Controller
     /**
      * Renvoie un nouvel email de verification si l'utilisateur n'a pas recu/clique le premier.
      */
-    public function resendVerification(Request $request)
+  public function resendVerification(Request $request)
     {
         $request->validate(['email' => 'required|email']);
         $user = User::where('email', $request->email)->first();
 
         if (! $user) {
             return response()->json(['message' => 'Aucun compte trouvé avec cet email.'], 404);
+        }
+        if ($user->role === 'responsable') {
+            return response()->json(['message' => 'Votre compte est en attente de validation par un responsable, aucun email de vérification n\'est nécessaire.'], 422);
         }
         if ($user->hasVerifiedEmail()) {
             return response()->json(['message' => 'Ce compte est déjà vérifié.']);
