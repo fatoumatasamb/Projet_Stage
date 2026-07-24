@@ -7,16 +7,21 @@ import StatusDot from '../../components/StatusDot'
 // ou signaler directement un incident detecte par le responsable lui-meme.
 export default function Incidents() {
   const [incidents, setIncidents] = useState([])
+  const [materiels, setMateriels] = useState([])
+  const [salles, setSalles] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [description, setDescription] = useState('')
-  const [quantite, setQuantite] = useState(1)
+  const [form, setForm] = useState({ materiel_id: '', salle_id: '', description: '', quantite_materiel_affecte: 1 })
   const [submitting, setSubmitting] = useState(false)
 
   function load() {
     api.get('/incidents').then((res) => setIncidents(res.data))
   }
 
-  useEffect(load, [])
+  useEffect(() => {
+    load()
+    api.get('/materiels').then((res) => setMateriels(res.data))
+    api.get('/salles').then((res) => setSalles(res.data))
+  }, [])
 
   async function transmettre(id) {
     await api.post(`/incidents/${id}/transmettre`)
@@ -27,9 +32,8 @@ export default function Incidents() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      await api.post('/incidents', { description, quantite_materiel_affecte: quantite })
-      setDescription('')
-      setQuantite(1)
+      await api.post('/incidents', form)
+      setForm({ materiel_id: '', salle_id: '', description: '', quantite_materiel_affecte: 1 })
       setShowForm(false)
       load()
     } finally {
@@ -50,26 +54,45 @@ export default function Incidents() {
       </div>
 
       {showForm && (
-        <form onSubmit={signalerDirectement} className="card mt-4 space-y-3">
-          <p className="text-xs text-blueprint-900/60">
+        <form onSubmit={signalerDirectement} className="card mt-4 grid gap-3 md:grid-cols-2">
+          <p className="md:col-span-2 text-xs text-blueprint-900/60">
             Un incident signale directement par vous est transmis immediatement au technicien.
           </p>
-         <div className="grid gap-3 md:grid-cols-3">
+
+          <select className="input" value={form.materiel_id} onChange={(e) => setForm({ ...form, materiel_id: e.target.value })}>
+            <option value="">Materiel concerne (optionnel)</option>
+            {materiels.map((m) => <option key={m.id} value={m.id}>{m.nom}</option>)}
+          </select>
+          <select className="input" value={form.salle_id} onChange={(e) => setForm({ ...form, salle_id: e.target.value })}>
+            <option value="">Salle concernee (optionnel)</option>
+            {salles.map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
+          </select>
+
+          <div>
+            <label className="label">Nombre de materiels affectes</label>
+            <input
+              type="number"
+              min="1"
+              className="input"
+              value={form.quantite_materiel_affecte}
+              onChange={(e) => setForm({ ...form, quantite_materiel_affecte: e.target.value })}
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="label">Description</label>
             <textarea
               required
-              className="input md:col-span-2"
               rows={3}
-              placeholder="Description de l'incident"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              className="input"
+              placeholder="Decrivez le probleme constate"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
-            <div>
-              <label className="label">Nombre de materiels affectes</label>
-              <input type="number" min="1" className="input" value={quantite} onChange={(e) => setQuantite(e.target.value)} />
-            </div>
           </div>
-          <button disabled={submitting} className="btn-accent">
-            {submitting ? 'Envoi…' : 'Transmettre au technicien'}
+
+          <button disabled={submitting} className="btn-accent md:col-span-2">
+            {submitting ? 'Envoi...' : 'Transmettre au technicien'}
           </button>
         </form>
       )}
@@ -83,7 +106,9 @@ export default function Incidents() {
               <div>
                 <p className="text-sm">{i.description}</p>
                 <p className="mt-1 font-mono text-xs text-blueprint-900/50">
-                  {i.materiel?.nom || i.salle?.nom || '—'} · Signale par {i.signale_par?.nom || '—'} · {new Date(i.date_signalement).toLocaleString('fr-FR')}
+                  {i.materiel?.nom || i.salle?.nom || '-'}
+                  {i.quantite_materiel_affecte ? ` - ${i.quantite_materiel_affecte} unite(s)` : ''}
+                  {' - Signale par '}{i.signale_par?.nom || '-'}{' - '}{new Date(i.date_signalement).toLocaleString('fr-FR')}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -106,7 +131,9 @@ export default function Incidents() {
               <div>
                 <p className="text-sm">{i.description}</p>
                 <p className="mt-1 font-mono text-xs text-blueprint-900/50">
-                  {i.materiel?.nom || i.salle?.nom || '—'} · Technicien: {i.technicien?.user?.nom || '—'}
+                  {i.materiel?.nom || i.salle?.nom || '-'}
+                  {i.quantite_materiel_affecte ? ` - ${i.quantite_materiel_affecte} unite(s)` : ''}
+                  {' - Technicien: '}{i.technicien?.user?.nom || '-'}
                 </p>
               </div>
               <StatusDot status={i.statut} />
