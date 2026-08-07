@@ -48,6 +48,9 @@ class ResponsableController extends Controller
             'role' => 'required|in:enseignant,etudiant,technicien,responsable',
             'specialite' => 'nullable|string',
             'groupe' => 'nullable|string',
+            'departement' => 'nullable|string|max:255',
+            'filiere' => 'nullable|string|max:255',
+            'niveau' => 'nullable|string|max:255',
             'matricule' => 'nullable|string',
         ]);
 
@@ -79,10 +82,12 @@ class ResponsableController extends Controller
             ]),
             'etudiant' => Etudiant::create([
                 'user_id' => $user->id,
-                'description' => $request->description,
                 'groupe' => $request->groupe,
+                'departement' => $request->departement,
+                'filiere' => $request->filiere,
+                'niveau' => $request->niveau,
                 'date_inscription' => now(),
-            ]),
+]),
             'technicien' => Technicien::create([
                 'user_id' => $user->id,
                 'matricule' => $request->matricule,

@@ -5,10 +5,12 @@ import { useAuth } from '../../context/AuthContext'
 export default function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({
-    nom: '', prenom: '', email: '', password: '', password_confirmation: '',
-    telephone: '', role: 'etudiant', specialite: '', groupe: '', matricule: '',
-  })
+ const [form, setForm] = useState({
+  nom: '', prenom: '', email: '', password: '', password_confirmation: '',
+  telephone: '', role: 'etudiant', specialite: '', groupe: '', matricule: '',
+  departement: '', filiere: '', niveau: '',
+})
+
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -99,12 +101,33 @@ export default function Register() {
               <input className="input" value={form.specialite} onChange={(e) => update('specialite', e.target.value)} />
             </div>
           )}
-          {form.role === 'etudiant' && (
-            <div className="mb-4">
-              <label className="label">Groupe</label>
-              <input className="input" value={form.groupe} onChange={(e) => update('groupe', e.target.value)} />
-            </div>
-          )}
+         {form.role === 'etudiant' && (
+  <>
+    <div className="mb-4">
+      <label className="label">Groupe</label>
+      <input className="input" value={form.groupe} onChange={(e) => update('groupe', e.target.value)} />
+    </div>
+    <div className="mb-4">
+      <label className="label">Département</label>
+      <input className="input" value={form.departement} onChange={(e) => update('departement', e.target.value)} />
+    </div>
+    <div className="mb-4">
+      <label className="label">Filière</label>
+      <input className="input" value={form.filiere} onChange={(e) => update('filiere', e.target.value)} />
+    </div>
+    <div className="mb-4">
+      <label className="label">Niveau</label>
+      <select className="input" value={form.niveau} onChange={(e) => update('niveau', e.target.value)}>
+        <option value="">Sélectionner un niveau</option>
+        <option value="Licence 1">Licence 1</option>
+        <option value="Licence 2">Licence 2</option>
+        <option value="Licence 3">Licence 3</option>
+        <option value="Master 1">Master 1</option>
+        <option value="Master 2">Master 2</option>
+      </select>
+    </div>
+  </>
+)}
           {form.role === 'technicien' && (
             <div className="mb-4">
               <label className="label">Matricule</label>

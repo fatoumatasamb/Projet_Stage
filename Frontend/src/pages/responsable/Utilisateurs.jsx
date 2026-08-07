@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import DashboardLayout from '../../layouts/DashboardLayout'
 import api from '../../services/api'
 import StatusDot from '../../components/StatusDot'
@@ -14,22 +14,44 @@ const EMPTY_FORM = {
   specialite: '',
   groupe: '',
   matricule: '',
+  departement: '',
+  filiere: '',
+  niveau: '',
 }
+
+const TABS = [
+  { key: 'responsable', label: 'Responsables' },
+  { key: 'enseignant', label: 'Enseignants' },
+  { key: 'etudiant', label: 'Etudiants' },
+  { key: 'technicien', label: 'Techniciens' },
+]
 
 // Gerer les utilisateurs / Valider / Rejeter / Suspendre / Supprimer / Creer un compte
 export default function Utilisateurs() {
   const [users, setUsers] = useState([])
-  const [roleFilter, setRoleFilter] = useState('')
+  const [activeTab, setActiveTab] = useState('etudiant')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  // Filtres additionnels pour l'onglet Etudiants
+  const [filtreDepartement, setFiltreDepartement] = useState('')
+  const [filtreFiliere, setFiltreFiliere] = useState('')
+  const [filtreNiveau, setFiltreNiveau] = useState('')
+
   function load() {
-    api.get('/utilisateurs', { params: { role: roleFilter || undefined } }).then((res) => setUsers(res.data.data))
+    api.get('/utilisateurs', { params: { role: activeTab || undefined } }).then((res) => setUsers(res.data.data))
   }
 
-  useEffect(load, [roleFilter])
+  useEffect(load, [activeTab])
+
+  // Reinitialise les filtres etudiants quand on change d'onglet
+  useEffect(() => {
+    setFiltreDepartement('')
+    setFiltreFiliere('')
+    setFiltreNiveau('')
+  }, [activeTab])
 
   async function valider(id) {
     await api.post(`/utilisateurs/${id}/valider`)
@@ -71,22 +93,80 @@ export default function Utilisateurs() {
     }
   }
 
+  // --- Donnees specifiques a l'onglet Etudiants ---
+  const etudiants = useMemo(() => {
+    if (activeTab !== 'etudiant') return []
+
+    const departements = new Set()
+    const filieres = new Set()
+    const niveaux = new Set()
+
+    users.forEach((u) => {
+      if (u.etudiant?.departement) departements.add(u.etudiant.departement)
+      if (u.etudiant?.filiere) filieres.add(u.etudiant.filiere)
+      if (u.etudiant?.niveau) niveaux.add(u.etudiant.niveau)
+    })
+
+    const filtres = users.filter((u) => {
+      if (filtreDepartement && u.etudiant?.departement !== filtreDepartement) return false
+      if (filtreFiliere && u.etudiant?.filiere !== filtreFiliere) return false
+      if (filtreNiveau && u.etudiant?.niveau !== filtreNiveau) return false
+      return true
+    })
+
+    // Tri : Departement > Filiere > Niveau > Groupe
+    const tries = [...filtres].sort((a, b) => {
+      const da = a.etudiant?.departement || ''
+      const db = b.etudiant?.departement || ''
+      if (da !== db) return da.localeCompare(db)
+
+      const fa = a.etudiant?.filiere || ''
+      const fb = b.etudiant?.filiere || ''
+      if (fa !== fb) return fa.localeCompare(fb)
+
+      const na = a.etudiant?.niveau || ''
+      const nb = b.etudiant?.niveau || ''
+      if (na !== nb) return na.localeCompare(nb)
+
+      const ga = a.etudiant?.groupe || ''
+      const gb = b.etudiant?.groupe || ''
+      return ga.localeCompare(gb)
+    })
+
+    return {
+      liste: tries,
+      departements: [...departements].sort(),
+      filieres: [...filieres].sort(),
+      niveaux: [...niveaux].sort(),
+    }
+  }, [users, activeTab, filtreDepartement, filtreFiliere, filtreNiveau])
+
+  const listeAffichee = activeTab === 'etudiant' ? etudiants.liste : users
+
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold">Utilisateurs</h1>
-        <div className="flex items-center gap-3">
-          <select className="input w-48" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-            <option value="">Tous les roles</option>
-            <option value="enseignant">Enseignants</option>
-            <option value="etudiant">Etudiants</option>
-            <option value="technicien">Techniciens</option>
-            <option value="responsable">Responsables</option>
-          </select>
-          <button onClick={() => setShowForm((v) => !v)} className="btn-accent">
-            {showForm ? 'Annuler' : '+ Creer un compte'}
+        <button onClick={() => setShowForm((v) => !v)} className="btn-accent">
+          {showForm ? 'Annuler' : '+ Creer un compte'}
+        </button>
+      </div>
+
+      {/* Onglets par role */}
+      <div className="mt-4 flex gap-1 border-b border-blueprint-900/10">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 text-sm font-medium transition ${
+              activeTab === tab.key
+                ? 'border-b-2 border-accent text-accent'
+                : 'text-blueprint-900/50 hover:text-blueprint-900/80'
+            }`}
+          >
+            {tab.label}
           </button>
-        </div>
+        ))}
       </div>
 
       {showForm && (
@@ -116,7 +196,19 @@ export default function Utilisateurs() {
             <input placeholder="Specialite" className="input" value={form.specialite} onChange={(e) => setForm({ ...form, specialite: e.target.value })} />
           )}
           {form.role === 'etudiant' && (
-            <input placeholder="Groupe" className="input" value={form.groupe} onChange={(e) => setForm({ ...form, groupe: e.target.value })} />
+            <>
+              <input placeholder="Departement" className="input" value={form.departement} onChange={(e) => setForm({ ...form, departement: e.target.value })} />
+              <input placeholder="Filiere" className="input" value={form.filiere} onChange={(e) => setForm({ ...form, filiere: e.target.value })} />
+              <select className="input" value={form.niveau} onChange={(e) => setForm({ ...form, niveau: e.target.value })}>
+                <option value="">Niveau</option>
+                <option value="Licence 1">Licence 1</option>
+                <option value="Licence 2">Licence 2</option>
+                <option value="Licence 3">Licence 3</option>
+                <option value="Master 1">Master 1</option>
+                <option value="Master 2">Master 2</option>
+              </select>
+              <input placeholder="Groupe" className="input" value={form.groupe} onChange={(e) => setForm({ ...form, groupe: e.target.value })} />
+            </>
           )}
           {form.role === 'technicien' && (
             <input placeholder="Matricule" className="input" value={form.matricule} onChange={(e) => setForm({ ...form, matricule: e.target.value })} />
@@ -128,23 +220,71 @@ export default function Utilisateurs() {
         </form>
       )}
 
+      {/* Filtres specifiques aux etudiants */}
+      {activeTab === 'etudiant' && (
+        <div className="mt-4 flex flex-wrap gap-3">
+          <select className="input w-48" value={filtreDepartement} onChange={(e) => setFiltreDepartement(e.target.value)}>
+            <option value="">Tous les departements</option>
+            {etudiants.departements?.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <select className="input w-48" value={filtreFiliere} onChange={(e) => setFiltreFiliere(e.target.value)}>
+            <option value="">Toutes les filieres</option>
+            {etudiants.filieres?.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <select className="input w-48" value={filtreNiveau} onChange={(e) => setFiltreNiveau(e.target.value)}>
+            <option value="">Tous les niveaux</option>
+            {etudiants.niveaux?.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+      )}
+
       <div className="mt-6 overflow-hidden rounded-lg border border-blueprint-900/10">
         <table className="w-full text-sm">
           <thead className="bg-blueprint-950 text-left text-xs uppercase tracking-wide text-white/70">
             <tr>
               <th className="px-4 py-2">Nom</th>
               <th className="px-4 py-2">Email</th>
-              <th className="px-4 py-2">Role</th>
+
+              {activeTab === 'enseignant' && <th className="px-4 py-2">Specialite</th>}
+
+              {activeTab === 'etudiant' && (
+                <>
+                  <th className="px-4 py-2">Departement</th>
+                  <th className="px-4 py-2">Filiere</th>
+                  <th className="px-4 py-2">Niveau</th>
+                  <th className="px-4 py-2">Groupe</th>
+                </>
+              )}
+
+              {activeTab === 'technicien' && <th className="px-4 py-2">Matricule</th>}
+
               <th className="px-4 py-2">Statut</th>
               <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
+            {listeAffichee.map((u) => (
               <tr key={u.id} className="border-t border-blueprint-900/5">
                 <td className="px-4 py-2 font-medium">{u.nom} {u.prenom}</td>
                 <td className="px-4 py-2 font-mono text-xs">{u.email}</td>
-                <td className="px-4 py-2 capitalize">{u.role}</td>
+
+                {activeTab === 'enseignant' && (
+                  <td className="px-4 py-2">{u.enseignant?.specialite || '-'}</td>
+                )}
+
+                {activeTab === 'etudiant' && (
+                  <>
+                    <td className="px-4 py-2">{u.etudiant?.departement || '-'}</td>
+                    <td className="px-4 py-2">{u.etudiant?.filiere || '-'}</td>
+                    <td className="px-4 py-2">{u.etudiant?.niveau || '-'}</td>
+                    <td className="px-4 py-2">{u.etudiant?.groupe || '-'}</td>
+                  </>
+                )}
+
+                {activeTab === 'technicien' && (
+                  <td className="px-4 py-2">{u.technicien?.matricule || '-'}</td>
+                )}
+
                 <td className="px-4 py-2"><StatusDot status={u.statut} /></td>
                 <td className="px-4 py-2 space-x-3">
                   {u.statut !== 'actif' && (
@@ -160,6 +300,13 @@ export default function Utilisateurs() {
                 </td>
               </tr>
             ))}
+            {!listeAffichee.length && (
+              <tr>
+                <td colSpan={8} className="px-4 py-6 text-center text-sm text-blueprint-900/50">
+                  Aucun utilisateur pour cet onglet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
