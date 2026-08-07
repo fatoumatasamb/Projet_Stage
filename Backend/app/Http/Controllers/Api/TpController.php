@@ -18,6 +18,18 @@ class TpController extends Controller
             $query->where('enseignant_id', $request->user()->enseignant->id);
         }
 
+        // Un étudiant ne voit que les TP correspondant à sa filière/niveau/groupe
+        if ($request->user()->role === 'etudiant') {
+            $etudiant = $request->user()->etudiant;
+            $query->where(function ($q) use ($etudiant) {
+                $q->whereNull('filiere')->orWhere('filiere', $etudiant->filiere);
+            })->where(function ($q) use ($etudiant) {
+                $q->whereNull('niveau')->orWhere('niveau', $etudiant->niveau);
+            })->where(function ($q) use ($etudiant) {
+                $q->whereNull('groupe')->orWhere('groupe', $etudiant->groupe);
+            });
+        }
+
         return response()->json($query->latest()->paginate(15));
     }
 
@@ -32,6 +44,9 @@ class TpController extends Controller
         $data = $request->validate([
             'titre' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'filiere' => 'nullable|string',
+            'niveau' => 'nullable|string',
+            'groupe' => 'nullable|string',
         ]);
 
         $data['enseignant_id'] = $request->user()->enseignant->id;
@@ -47,6 +62,9 @@ class TpController extends Controller
         $data = $request->validate([
             'titre' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
+            'filiere' => 'nullable|string',
+            'niveau' => 'nullable|string',
+            'groupe' => 'nullable|string',
         ]);
 
         $tp->update($data);
