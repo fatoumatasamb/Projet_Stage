@@ -11,7 +11,7 @@ class Tp extends Model
 
     protected $table = 'tps';
 
-    protected $fillable = ['enseignant_id', 'titre', 'description', 'date_creation'];
+    protected $fillable = ['enseignant_id', 'titre', 'description', 'date_creation', 'ufr', 'departement', 'filiere', 'niveau', 'groupe'];
 
     public function enseignant()
     {

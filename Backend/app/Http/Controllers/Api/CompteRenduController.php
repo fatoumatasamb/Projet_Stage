@@ -14,6 +14,14 @@ class CompteRenduController extends Controller
     {
         $user = $request->user();
 
+        // Un enseignant ne peut consulter les comptes rendus que de ses propres TP.
+        if ($user->role === 'enseignant') {
+            $enseignant = $user->enseignant;
+            if (! $enseignant || $tp->enseignant_id !== $enseignant->id) {
+                abort(403, "Vous n'êtes pas l'auteur de ce TP.");
+            }
+        }
+
         $query = $tp->comptesRendus()->with('etudiant.user');
 
         // Un étudiant ne voit que ses propres comptes rendus
@@ -50,6 +58,17 @@ class CompteRenduController extends Controller
     // Noter Étudiant / Valider compte rendu (Enseignant)
     public function noter(Request $request, CompteRendu $compteRendu)
     {
+        $user = $request->user();
+
+        // Un enseignant ne peut noter que les comptes rendus de ses propres TP.
+        if ($user->role === 'enseignant') {
+            $enseignant = $user->enseignant;
+            $tp = $compteRendu->tp;
+            if (! $enseignant || ! $tp || $tp->enseignant_id !== $enseignant->id) {
+                abort(403, "Vous n'êtes pas l'auteur du TP concerné par ce compte rendu.");
+            }
+        }
+
         $data = $request->validate([
             'note' => 'required|numeric|min:0|max:20',
             'statut' => 'required|in:valide,refuse',

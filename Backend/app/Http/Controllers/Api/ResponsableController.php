@@ -48,6 +48,7 @@ class ResponsableController extends Controller
             'role' => 'required|in:enseignant,etudiant,technicien,responsable',
             'specialite' => 'nullable|string',
             'groupe' => 'nullable|string',
+            'ufr' => 'nullable|string|max:255',
             'departement' => 'nullable|string|max:255',
             'filiere' => 'nullable|string|max:255',
             'niveau' => 'nullable|string|max:255',
@@ -83,6 +84,7 @@ class ResponsableController extends Controller
             'etudiant' => Etudiant::create([
                 'user_id' => $user->id,
                 'groupe' => $request->groupe,
+                'ufr' => $request->ufr,
                 'departement' => $request->departement,
                 'filiere' => $request->filiere,
                 'niveau' => $request->niveau,

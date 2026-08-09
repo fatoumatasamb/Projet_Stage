@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
 use App\Models\Tp;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 // Use cases Enseignant : Ajouter TP, Supprimer TP ; Etudiant : Consulter TP
@@ -19,40 +21,54 @@ class TpController extends Controller
 
         if ($request->user()->role === 'etudiant') {
             $etudiant = $request->user()->etudiant;
-            $query->where(function ($q) use ($etudiant) {
-                $q->whereNull('departement')->orWhere('departement', $etudiant->departement);
-            })->where(function ($q) use ($etudiant) {
-                $q->whereNull('filiere')->orWhere('filiere', $etudiant->filiere);
-            })->where(function ($q) use ($etudiant) {
-                $q->whereNull('niveau')->orWhere('niveau', $etudiant->niveau);
-            })->where(function ($q) use ($etudiant) {
-                $q->whereNull('groupe')->orWhere('groupe', $etudiant->groupe);
-            });
+            $query->where('ufr', $etudiant->ufr)
+                ->where('departement', $etudiant->departement)
+                ->where('filiere', $etudiant->filiere)
+                ->where('niveau', $etudiant->niveau)
+                ->where(function ($q) use ($etudiant) {
+                    // Le groupe reste optionnel : un TP sans groupe precis
+                    // s'adresse a toute la classe (ufr/departement/filiere/niveau).
+                    $q->whereNull('groupe')->orWhere('groupe', $etudiant->groupe);
+                });
         }
 
         return response()->json($query->latest()->paginate(15));
     }
 
-    public function show(Tp $tp)
+   public function show(Request $request, Tp $tp)
     {
+        // Un enseignant ne peut consulter que le detail de ses propres TP.
+        if ($request->user()->role === 'enseignant') {
+            $enseignant = $request->user()->enseignant;
+            if (! $enseignant || $tp->enseignant_id !== $enseignant->id) {
+                abort(403, "Vous n'êtes pas l'auteur de ce TP.");
+            }
+        }
+
         return response()->json($tp->load(['enseignant.user', 'seances.salle', 'ressources', 'comptesRendus.etudiant.user']));
     }
 
+    // Ajouter TP + notifier les etudiants concernes (meme ufr/departement/filiere/niveau)
     public function store(Request $request)
     {
-        $data = $request->validate([
+       $data = $request->validate([
             'titre' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'departement' => 'nullable|string',
-            'filiere' => 'nullable|string',
-            'niveau' => 'nullable|string',
+            'ufr' => 'required|string',
+            'departement' => 'required|string',
+            'filiere' => 'required|string',
+            'niveau' => 'required|string',
             'groupe' => 'nullable|string',
         ]);
 
         $data['enseignant_id'] = $request->user()->enseignant->id;
         $data['date_creation'] = now();
 
-        return response()->json(Tp::create($data)->load('enseignant.user'), 201);
+        $tp = Tp::create($data)->load('enseignant.user');
+
+        $this->notifierEtudiantsConcernes($tp);
+
+        return response()->json($tp, 201);
     }
 
     public function update(Request $request, Tp $tp)
@@ -62,6 +78,7 @@ class TpController extends Controller
         $data = $request->validate([
             'titre' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
+            'ufr' => 'nullable|string',
             'departement' => 'nullable|string',
             'filiere' => 'nullable|string',
             'niveau' => 'nullable|string',
@@ -86,6 +103,35 @@ class TpController extends Controller
         $enseignant = $request->user()->enseignant;
         if (! $enseignant || $tp->enseignant_id !== $enseignant->id) {
             abort(403, "Vous n'êtes pas l'auteur de ce TP.");
+        }
+    }
+
+    // Notifie tous les etudiants actifs dont le profil (ufr/departement/filiere/niveau)
+    // correspond exactement a celui du TP nouvellement cree.
+   private function notifierEtudiantsConcernes(Tp $tp): void
+    {
+        // Coherent avec le filtre d'affichage : correspondance exacte requise sur
+        // ufr/departement/filiere/niveau (le groupe reste optionnel).
+        $etudiants = User::where('role', 'etudiant')
+            ->where('statut', 'actif')
+            ->whereHas('etudiant', function ($q) use ($tp) {
+                $q->where('ufr', $tp->ufr)
+                    ->where('departement', $tp->departement)
+                    ->where('filiere', $tp->filiere)
+                    ->where('niveau', $tp->niveau)
+                    ->where(function ($q2) use ($tp) {
+                        $q2->whereNull('groupe')->orWhere('groupe', $tp->groupe);
+                    });
+            })
+            ->get();
+
+        foreach ($etudiants as $etudiant) {
+            Notification::create([
+                'user_id' => $etudiant->id,
+                'type' => 'nouveau_tp',
+                'message' => "Un nouveau TP « {$tp->titre} » a ete publie pour votre filiere.",
+                'lien' => '/etudiant',
+            ]);
         }
     }
 }
