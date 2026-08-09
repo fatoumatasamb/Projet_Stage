@@ -9,15 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('etudiants', function (Blueprint $table) {
-            $table->string('niveau')->nullable()->after('groupe');
-            $table->string('filiere')->nullable()->after('niveau');
+            if (! Schema::hasColumn('etudiants', 'niveau')) {
+                $table->string('niveau')->nullable()->after('groupe');
+            }
+            if (! Schema::hasColumn('etudiants', 'filiere')) {
+                $table->string('filiere')->nullable()->after('niveau');
+            }
         });
     }
 
     public function down(): void
     {
-        Schema::table('etudiants', function (Blueprint $table) {
-            $table->dropColumn(['niveau', 'filiere']);
-        });
+        // Ne rien faire ici : ces colonnes sont gerees par la migration
+        // add_departement_filiere_niveau_to_etudiants_table
     }
 };

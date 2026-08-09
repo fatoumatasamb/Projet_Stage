@@ -13,15 +13,15 @@ class TpController extends Controller
     {
         $query = Tp::with(['enseignant.user', 'seances', 'ressources', 'comptesRendus']);
 
-        // Un enseignant ne voit par défaut que ses propres TP via ?mine=1
         if ($request->boolean('mine') && $request->user()->role === 'enseignant') {
             $query->where('enseignant_id', $request->user()->enseignant->id);
         }
 
-        // Un étudiant ne voit que les TP correspondant à sa filière/niveau/groupe
         if ($request->user()->role === 'etudiant') {
             $etudiant = $request->user()->etudiant;
             $query->where(function ($q) use ($etudiant) {
+                $q->whereNull('departement')->orWhere('departement', $etudiant->departement);
+            })->where(function ($q) use ($etudiant) {
                 $q->whereNull('filiere')->orWhere('filiere', $etudiant->filiere);
             })->where(function ($q) use ($etudiant) {
                 $q->whereNull('niveau')->orWhere('niveau', $etudiant->niveau);
@@ -38,12 +38,12 @@ class TpController extends Controller
         return response()->json($tp->load(['enseignant.user', 'seances.salle', 'ressources', 'comptesRendus.etudiant.user']));
     }
 
-    // Ajouter TP
     public function store(Request $request)
     {
         $data = $request->validate([
             'titre' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'departement' => 'nullable|string',
             'filiere' => 'nullable|string',
             'niveau' => 'nullable|string',
             'groupe' => 'nullable|string',
@@ -62,6 +62,7 @@ class TpController extends Controller
         $data = $request->validate([
             'titre' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
+            'departement' => 'nullable|string',
             'filiere' => 'nullable|string',
             'niveau' => 'nullable|string',
             'groupe' => 'nullable|string',
@@ -72,11 +73,9 @@ class TpController extends Controller
         return response()->json($tp);
     }
 
-    // Supprimer TP
     public function destroy(Request $request, Tp $tp)
     {
         $this->authorizeOwner($request, $tp);
-
         $tp->delete();
 
         return response()->json(['message' => 'TP supprimé.']);
