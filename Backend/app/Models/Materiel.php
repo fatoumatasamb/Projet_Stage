@@ -9,7 +9,7 @@ class Materiel extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nom', 'type', 'disponibilite', 'quantite', 'etat'];
+    protected $fillable = ['nom', 'type', 'categorie', 'disponibilite', 'quantite', 'etat'];
 
     protected $casts = ['disponibilite' => 'boolean'];
 

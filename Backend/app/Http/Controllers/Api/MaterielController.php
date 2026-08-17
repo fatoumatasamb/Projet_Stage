@@ -10,9 +10,20 @@ use Illuminate\Http\Request;
 // Gérer les équipements / Mettre à jour les ressources techniques (Technicien)
 class MaterielController extends Controller
 {
+    public const CATEGORIES = [
+        'Matériels scientifiques et didactiques',
+        'Capteurs et instrumentation',
+        'Acquisition de données',
+        'Commande et contrôle',
+        'Informatique embarquée et calcul',
+        'Audiovisuel et supervision',
+        'Réseau et communication',
+        'Infrastructure, alimentation et sécurité',
+    ];
+
     public function index()
     {
-        return response()->json(Materiel::orderBy('nom')->get());
+        return response()->json(Materiel::orderBy('categorie')->orderBy('nom')->get());
     }
 
     public function store(Request $request)
@@ -20,6 +31,7 @@ class MaterielController extends Controller
         $data = $request->validate([
             'nom' => 'required|string|max:255',
             'type' => 'nullable|string|max:255',
+            'categorie' => 'nullable|string|in:' . implode(',', self::CATEGORIES),
             'disponibilite' => 'boolean',
             'quantite' => 'required|integer|min:0',
             'etat' => 'nullable|string|max:255',
@@ -33,6 +45,7 @@ class MaterielController extends Controller
         $data = $request->validate([
             'nom' => 'sometimes|string|max:255',
             'type' => 'nullable|string|max:255',
+            'categorie' => 'nullable|string|in:' . implode(',', self::CATEGORIES),
             'disponibilite' => 'boolean',
             'quantite' => 'sometimes|integer|min:0',
             'etat' => 'nullable|string|max:255',
