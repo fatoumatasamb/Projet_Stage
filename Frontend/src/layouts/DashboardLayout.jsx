@@ -8,6 +8,7 @@ const NAV = {
     { to: '/enseignant', label: 'Mes TP' },
     { to: '/enseignant/reservations', label: 'Réservations' },
     { to: '/enseignant/notes', label: 'Comptes rendus' },
+    { to: '/enseignant/materiels', label: 'Matériels' },
     { to: '/enseignant/incidents', label: 'Incidents' },
   ],
   etudiant: [

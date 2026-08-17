@@ -2,10 +2,26 @@ import React, { useEffect, useState } from 'react'
 import DashboardLayout from '../../layouts/DashboardLayout'
 import api from '../../services/api'
 
+const CATEGORIES = [
+  { nom: 'Matériels scientifiques et didactiques', icone: '🔬' },
+  { nom: 'Capteurs et instrumentation', icone: '📡' },
+  { nom: 'Acquisition de données', icone: '📊' },
+  { nom: 'Commande et contrôle', icone: '🎛️' },
+  { nom: 'Informatique embarquée et calcul', icone: '💻' },
+  { nom: 'Audiovisuel et supervision', icone: '📹' },
+  { nom: 'Réseau et communication', icone: '🌐' },
+  { nom: 'Infrastructure, alimentation et sécurité', icone: '🔌' },
+]
+
+const ETAT_STYLES = {
+  bon: 'bg-emerald-50 text-emerald-700',
+  use: 'bg-amber-50 text-amber-700',
+  defectueux: 'bg-red-50 text-red-700',
+}
+
 // Gérer les équipements / Mettre à jour les ressources techniques
 export default function Materiels() {
   const [materiels, setMateriels] = useState([])
-  const [form, setForm] = useState({ nom: '', type: '', quantite: 1, etat: 'bon', disponibilite: true })
 
   function load() {
     api.get('/materiels').then((res) => setMateriels(res.data))
@@ -13,49 +29,96 @@ export default function Materiels() {
 
   useEffect(load, [])
 
-  async function handleCreate(e) {
-    e.preventDefault()
-    await api.post('/materiels', form)
-    setForm({ nom: '', type: '', quantite: 1, etat: 'bon', disponibilite: true })
-    load()
-  }
-
   async function toggleDispo(m) {
     await api.put(`/materiels/${m.id}`, { disponibilite: !m.disponibilite })
     load()
   }
 
+  const parCategorie = CATEGORIES.map((cat) => ({
+    ...cat,
+    items: materiels.filter((m) => m.categorie === cat.nom),
+  }))
+  const sansCategorie = materiels.filter((m) => !m.categorie)
+
   return (
     <DashboardLayout>
       <h1 className="font-display text-2xl font-semibold">Matériels &amp; équipements</h1>
+      <p className="mt-1 text-sm text-blueprint-900/60">Consultez et mettez à jour la disponibilité des équipements, classés par catégorie.</p>
 
-      <form onSubmit={handleCreate} className="card mt-6 grid gap-3 md:grid-cols-5">
-        <input required className="input" placeholder="Nom" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
-        <input className="input" placeholder="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} />
-        <input type="number" min="0" className="input" placeholder="Quantité" value={form.quantite} onChange={(e) => setForm({ ...form, quantite: e.target.value })} />
-        <input className="input" placeholder="État" value={form.etat} onChange={(e) => setForm({ ...form, etat: e.target.value })} />
-        <button className="btn-accent">Ajouter</button>
-      </form>
+      <div className="mt-6 space-y-6">
+        {parCategorie.map((groupe) => (
+          groupe.items.length > 0 && (
+            <section key={groupe.nom} className="card overflow-hidden !p-0">
+              <div className="flex items-center gap-2 border-b border-blueprint-900/10 bg-blueprint-950/[0.03] px-5 py-3">
+                <span className="text-lg">{groupe.icone}</span>
+                <h2 className="font-display text-sm font-semibold text-blueprint-900">{groupe.nom}</h2>
+                <span className="ml-auto rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">
+                  {groupe.items.length}
+                </span>
+              </div>
+              <div className="divide-y divide-blueprint-900/5">
+                {groupe.items.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between gap-4 px-5 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-blueprint-900">{m.nom}</p>
+                      <p className="text-xs text-blueprint-900/50">{m.type || 'Type non précisé'}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="font-mono text-xs text-blueprint-900/50">×{m.quantite}</span>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${ETAT_STYLES[m.etat] || 'bg-blueprint-900/5 text-blueprint-900/60'}`}>
+                        {m.etat || 'non précisé'}
+                      </span>
+                      <button
+                        onClick={() => toggleDispo(m)}
+                        className={`h-2.5 w-2.5 rounded-full ${m.disponibilite ? 'bg-accent' : 'bg-red-500'}`}
+                        title="Basculer la disponibilité"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )
+        ))}
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-blueprint-900/10">
-        <table className="w-full text-sm">
-          <thead className="bg-blueprint-950 text-left text-xs uppercase tracking-wide text-white/70">
-            <tr><th className="px-4 py-2">Nom</th><th className="px-4 py-2">Type</th><th className="px-4 py-2">Qté</th><th className="px-4 py-2">État</th><th className="px-4 py-2">Disponibilité</th></tr>
-          </thead>
-          <tbody>
-            {materiels.map((m) => (
-              <tr key={m.id} className="border-t border-blueprint-900/5">
-                <td className="px-4 py-2 font-medium">{m.nom}</td>
-                <td className="px-4 py-2">{m.type}</td>
-                <td className="px-4 py-2 font-mono">{m.quantite}</td>
-                <td className="px-4 py-2">{m.etat}</td>
-                <td className="px-4 py-2">
-                  <button onClick={() => toggleDispo(m)} className={`status-dot ${m.disponibilite ? 'bg-accent' : 'bg-red-500'}`} title="Basculer la disponibilité" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {sansCategorie.length > 0 && (
+          <section className="card overflow-hidden !p-0">
+            <div className="flex items-center gap-2 border-b border-blueprint-900/10 bg-blueprint-950/[0.03] px-5 py-3">
+              <span className="text-lg">📦</span>
+              <h2 className="font-display text-sm font-semibold text-blueprint-900">Sans catégorie</h2>
+              <span className="ml-auto rounded-full bg-blueprint-900/10 px-2.5 py-0.5 text-xs font-semibold text-blueprint-900/60">
+                {sansCategorie.length}
+              </span>
+            </div>
+            <div className="divide-y divide-blueprint-900/5">
+              {sansCategorie.map((m) => (
+                <div key={m.id} className="flex items-center justify-between gap-4 px-5 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-blueprint-900">{m.nom}</p>
+                    <p className="text-xs text-blueprint-900/50">{m.type || 'Type non précisé'}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="font-mono text-xs text-blueprint-900/50">×{m.quantite}</span>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${ETAT_STYLES[m.etat] || 'bg-blueprint-900/5 text-blueprint-900/60'}`}>
+                      {m.etat || 'non précisé'}
+                    </span>
+                    <button
+                      onClick={() => toggleDispo(m)}
+                      className={`h-2.5 w-2.5 rounded-full ${m.disponibilite ? 'bg-accent' : 'bg-red-500'}`}
+                      title="Basculer la disponibilité"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {!materiels.length && (
+          <p className="rounded-lg border border-dashed border-blueprint-900/15 py-10 text-center text-sm text-blueprint-900/50">
+            Aucun matériel enregistré pour le moment.
+          </p>
+        )}
       </div>
     </DashboardLayout>
   )

@@ -19,41 +19,13 @@ const ETAT_STYLES = {
   defectueux: 'bg-red-50 text-red-700',
 }
 
-// Gérer les ressources matérielles et pédagogiques
+// Consulter les matériels disponibles (lecture seule)
 export default function Materiels() {
   const [materiels, setMateriels] = useState([])
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ nom: '', type: '', categorie: '', quantite: 1, etat: 'bon' })
-  const [submitting, setSubmitting] = useState(false)
 
-  function load() {
+  useEffect(() => {
     api.get('/materiels').then((res) => setMateriels(res.data))
-  }
-  useEffect(load, [])
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setSubmitting(true)
-    try {
-      await api.post('/materiels-admin', form)
-      setForm({ nom: '', type: '', categorie: '', quantite: 1, etat: 'bon' })
-      setShowForm(false)
-      load()
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  async function toggleDispo(m) {
-    await api.put(`/materiels-admin/${m.id}`, { disponibilite: !m.disponibilite })
-    load()
-  }
-
-  async function remove(id) {
-    if (!confirm('Supprimer ce matériel ?')) return
-    await api.delete(`/materiels-admin/${id}`)
-    load()
-  }
+  }, [])
 
   const parCategorie = CATEGORIES.map((cat) => ({
     ...cat,
@@ -63,68 +35,10 @@ export default function Materiels() {
 
   return (
     <DashboardLayout>
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-semibold">Matériels &amp; ressources pédagogiques</h1>
-          <p className="mt-1 text-sm text-blueprint-900/60">
-            Supervisez les équipements du laboratoire, classés par catégorie.
-          </p>
-        </div>
-        <button onClick={() => setShowForm((s) => !s)} className="btn-accent whitespace-nowrap">
-          {showForm ? 'Annuler' : '+ Ajouter un matériel'}
-        </button>
-      </div>
+      <h1 className="font-display text-2xl font-semibold">Matériels &amp; équipements</h1>
+      <p className="mt-1 text-sm text-blueprint-900/60">Consultez les matériels disponibles pour vos séances de TP, classés par catégorie.</p>
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="card mt-4 grid gap-3 md:grid-cols-5">
-          <input
-            required
-            className="input"
-            placeholder="Nom du matériel"
-            value={form.nom}
-            onChange={(e) => setForm({ ...form, nom: e.target.value })}
-          />
-          <input
-            className="input"
-            placeholder="Type (optionnel)"
-            value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
-          />
-          <select
-            className="input"
-            value={form.categorie}
-            onChange={(e) => setForm({ ...form, categorie: e.target.value })}
-          >
-            <option value="">Sans catégorie</option>
-            {CATEGORIES.map((c) => (
-              <option key={c.nom} value={c.nom}>{c.icone} {c.nom}</option>
-            ))}
-          </select>
-          <input
-            type="number"
-            min="0"
-            required
-            className="input"
-            placeholder="Quantité"
-            value={form.quantite}
-            onChange={(e) => setForm({ ...form, quantite: e.target.value })}
-          />
-          <select
-            className="input"
-            value={form.etat}
-            onChange={(e) => setForm({ ...form, etat: e.target.value })}
-          >
-            <option value="bon">Bon état</option>
-            <option value="use">Usé</option>
-            <option value="defectueux">Défectueux</option>
-          </select>
-          <button disabled={submitting} className="btn-accent md:col-span-5">
-            {submitting ? 'Ajout...' : "Confirmer l'ajout"}
-          </button>
-        </form>
-      )}
-
-      <div className="mt-8 space-y-6">
+      <div className="mt-6 space-y-6">
         {parCategorie.map((groupe) => (
           groupe.items.length > 0 && (
             <section key={groupe.nom} className="card overflow-hidden !p-0">
@@ -147,17 +61,10 @@ export default function Materiels() {
                       <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${ETAT_STYLES[m.etat] || 'bg-blueprint-900/5 text-blueprint-900/60'}`}>
                         {m.etat || 'non précisé'}
                       </span>
-                      <button
-                        onClick={() => toggleDispo(m)}
+                      <span
                         className={`h-2.5 w-2.5 rounded-full ${m.disponibilite ? 'bg-accent' : 'bg-red-500'}`}
-                        title="Basculer la disponibilité"
+                        title={m.disponibilite ? 'Disponible' : 'Indisponible'}
                       />
-                      <button
-                        onClick={() => remove(m.id)}
-                        className="rounded-md px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50"
-                      >
-                        Supprimer
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -187,17 +94,10 @@ export default function Materiels() {
                     <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${ETAT_STYLES[m.etat] || 'bg-blueprint-900/5 text-blueprint-900/60'}`}>
                       {m.etat || 'non précisé'}
                     </span>
-                    <button
-                      onClick={() => toggleDispo(m)}
+                    <span
                       className={`h-2.5 w-2.5 rounded-full ${m.disponibilite ? 'bg-accent' : 'bg-red-500'}`}
-                      title="Basculer la disponibilité"
+                      title={m.disponibilite ? 'Disponible' : 'Indisponible'}
                     />
-                    <button
-                      onClick={() => remove(m.id)}
-                      className="rounded-md px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50"
-                    >
-                      Supprimer
-                    </button>
                   </div>
                 </div>
               ))}
