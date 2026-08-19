@@ -11,9 +11,12 @@ use Illuminate\Http\Request;
 // Use cases Enseignant : Ajouter TP, Supprimer TP ; Etudiant : Consulter TP
 class TpController extends Controller
 {
-    public function index(Request $request)
+    
+
+         public function index(Request $request)
     {
-        $query = Tp::with(['enseignant.user', 'seances', 'ressources', 'comptesRendus']);
+        $query = Tp::with(['enseignant.user', 'seances', 'ressources', 'comptesRendus', 'materiels'])
+            ->withCount('materiels');
 
         if ($request->boolean('mine') && $request->user()->role === 'enseignant') {
             $query->where('enseignant_id', $request->user()->enseignant->id);
@@ -26,8 +29,6 @@ class TpController extends Controller
                 ->where('filiere', $etudiant->filiere)
                 ->where('niveau', $etudiant->niveau)
                 ->where(function ($q) use ($etudiant) {
-                    // Le groupe reste optionnel : un TP sans groupe precis
-                    // s'adresse a toute la classe (ufr/departement/filiere/niveau).
                     $q->whereNull('groupe')->orWhere('groupe', $etudiant->groupe);
                 });
         }
@@ -45,7 +46,7 @@ class TpController extends Controller
             }
         }
 
-        return response()->json($tp->load(['enseignant.user', 'seances.salle', 'ressources', 'comptesRendus.etudiant.user']));
+        return response()->json($tp->load(['enseignant.user', 'seances.salle', 'ressources', 'comptesRendus.etudiant.user' , 'materiels']));
     }
 
     // Ajouter TP + notifier les etudiants concernes (meme ufr/departement/filiere/niveau)
@@ -133,5 +134,26 @@ class TpController extends Controller
                 'lien' => '/etudiant',
             ]);
         }
+    }
+
+
+        // Sélectionner les matériels nécessaires pour un TP (avec quantité requise pour chacun)
+    public function materiels(Request $request, Tp $tp)
+    {
+        $this->authorizeOwner($request, $tp);
+
+        $data = $request->validate([
+            'materiels' => 'array',
+            'materiels.*.materiel_id' => 'required|exists:materiels,id',
+            'materiels.*.quantite' => 'required|integer|min:1',
+        ]);
+
+        $syncData = collect($data['materiels'] ?? [])
+            ->mapWithKeys(fn ($m) => [$m['materiel_id'] => ['quantite' => $m['quantite']]])
+            ->toArray();
+
+        $tp->materiels()->sync($syncData);
+
+        return response()->json($tp->load('materiels'));
     }
 }

@@ -53,6 +53,19 @@ export default function TpList() {
             <p className="mt-1 text-sm text-blueprint-900/60">{tp.description}</p>
             <p className="mt-2 font-mono text-xs text-blueprint-900/50">Par {tp.enseignant?.user?.nom}</p>
 
+            {tp.materiels?.length > 0 && (
+              <div className="mt-3 border-t border-blueprint-900/10 pt-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-blueprint-900/50">Matériels nécessaires</p>
+                <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                  {tp.materiels.map((m) => (
+                    <li key={m.id} className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+                      {m.nom} {m.pivot?.quantite > 1 && `×${m.pivot.quantite}`}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="mt-3 border-t border-blueprint-900/10 pt-3">
               <p className="text-xs font-medium uppercase tracking-wide text-blueprint-900/50">Ressources pédagogiques</p>
               {ressources[tp.id]?.length > 0 ? (
@@ -63,9 +76,8 @@ export default function TpList() {
                         <p className="font-medium">{r.titre}</p>
                         {r.description && <p className="text-xs text-blueprint-900/50">{r.description}</p>}
                       </div>
-                     {r.fichier && (
-                        
-                          <a href={fileUrl(r.fichier)}
+                      {r.fichier && (
+                        <a href={fileUrl(r.fichier)}
                           target="_blank"
                           rel="noreferrer"
                           download

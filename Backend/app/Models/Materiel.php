@@ -17,4 +17,10 @@ class Materiel extends Model
     {
         return $this->hasMany(Incident::class);
     }
+        public function materiels()
+    {
+        return $this->belongsToMany(Materiel::class, 'tp_materiel')
+            ->withPivot('quantite')
+            ->withTimestamps();
+    }
 }

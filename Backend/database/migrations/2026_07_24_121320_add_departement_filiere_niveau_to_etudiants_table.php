@@ -9,9 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('etudiants', function (Blueprint $table) {
-            $table->string('departement')->nullable()->after('user_id');
-            $table->string('filiere')->nullable()->after('departement');
-            $table->string('niveau')->nullable()->after('filiere');
+            if (! Schema::hasColumn('etudiants', 'departement')) {
+                $table->string('departement')->nullable()->after('user_id');
+            }
+            if (! Schema::hasColumn('etudiants', 'filiere')) {
+                $table->string('filiere')->nullable()->after('departement');
+            }
+            if (! Schema::hasColumn('etudiants', 'niveau')) {
+                $table->string('niveau')->nullable()->after('filiere');
+            }
         });
     }
 

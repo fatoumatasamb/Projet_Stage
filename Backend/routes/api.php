@@ -65,6 +65,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/tps', [TpController::class, 'store']);              // Ajouter TP
         Route::put('/tps/{tp}', [TpController::class, 'update']);
         Route::delete('/tps/{tp}', [TpController::class, 'destroy']);     // Supprimer TP
+        Route::post('/tps/{tp}/materiels', [TpController::class, 'materiels']);
 
         Route::post('/tps/{tp}/seances', [SeanceController::class, 'store']);     // Planifier une séance
         Route::put('/seances/{seance}', [SeanceController::class, 'update']);

@@ -32,4 +32,10 @@ class Tp extends Model
     {
         return $this->hasMany(CompteRendu::class);
     }
+        public function materiels()
+    {
+        return $this->belongsToMany(Materiel::class, 'tp_materiel')
+            ->withPivot('quantite')
+            ->withTimestamps();
+    }
 }
